@@ -1,0 +1,126 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>For You ❤️</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #060208;
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+canvas { width: 100vw; height: 100vh; display: block; }
+</style>
+</head>
+<body>
+<canvas id="heart"></canvas>
+<script>
+const canvas = document.getElementById("heart");
+const ctx = canvas.getContext("2d");
+
+const phrases = [
+ "I love you", "Seni seviyorum", "Te amo", "Je t'aime",
+ "Ich liebe dich", "Ti amo", "Eu te amo", "Я тебя люблю",
+ "사랑해", "愛してる", "我爱你", "मैं तुमसे प्यार करता हूँ",
+ "Σ' αγαπώ", "Ik hou van jou", "Jag älskar dig", "Kocham cię",
+ "ฉันรักเธอ", "Anh yêu em", "Aku cinta kamu", "Я тебе кохаю"
+];
+
+let W, H, items = [];
+const rand = (a,b) => Math.random()*(b-a)+a;
+
+function resize() {
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight;
+  canvas.width = W*dpr; canvas.height = H*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  build();
+}
+
+function heart(t) {
+  return {
+    x: 16*Math.sin(t)**3,
+    y: 13*Math.cos(t)-5*Math.cos(2*t)
+       -2*Math.cos(3*t)-Math.cos(4*t)
+  };
+}
+
+function inside(x,y,poly) {
+  let c = false;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++) {
+    const a=poly[i], b=poly[j];
+    if(((a.y>y)!==(b.y>y)) &&
+       x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x) c=!c;
+  }
+  return c;
+}
+
+function build() {
+  items = [];
+  const scale = Math.min(W/38,H/34,19);
+  const cx=W/2, cy=H/2;
+  const poly=[];
+  for(let i=0;i<720;i++) {
+    const p=heart(i*Math.PI*2/720);
+    poly.push({x:cx+p.x*scale,y:cy-p.y*scale});
+  }
+
+  const size = Math.max(8,Math.min(12,W/35));
+  const gap = size*0.9;
+  ctx.font=`bold ${size}px Arial`;
+
+  for(let y=cy-15*scale;y<cy+15*scale;y+=gap) {
+    for(let x=cx-17*scale;x<cx+17*scale;) {
+      const word=phrases[Math.floor(Math.random()*phrases.length)];
+      const width=ctx.measureText(word).width;
+      const px=x+width/2;
+      if(inside(px,y,poly)) {
+        items.push({
+          x:px,y,word,
+          size:rand(size-1,size+1),
+          start:rand(0,1),
+          color:`hsl(${350+rand(0,12)},100%,${rand(43,68)}%)`
+        });
+      }
+      x+=width+4;
+    }
+  }
+  items.sort(()=>Math.random()-.5);
+}
+
+let start=performance.now();
+function draw(now) {
+  ctx.clearRect(0,0,W,H);
+  const elapsed=(now-start)/1000;
+
+  items.forEach((p,i)=>{
+    const progress=Math.max(0,Math.min(1,(elapsed-i*0.003)/2.4));
+    const ease=1-Math.pow(1-progress,3);
+    const y=p.y-(1-ease)*45;
+    ctx.font=`bold ${p.size}px Arial`;
+    ctx.textAlign="center";
+    ctx.textBaseline="middle";
+    ctx.shadowBlur=progress>0.9?5:0;
+    ctx.shadowColor="#ff173d";
+    ctx.globalAlpha=ease;
+    ctx.fillStyle=p.color;
+    ctx.fillText(p.word,p.x,y);
+  });
+
+  ctx.globalAlpha=1;
+  ctx.shadowBlur=0;
+  requestAnimationFrame(draw);
+}
+
+addEventListener("resize",resize);
+resize();
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>
